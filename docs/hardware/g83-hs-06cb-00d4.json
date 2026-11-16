@@ -24,7 +24,7 @@
     "pairing_file_mode": "0600",
     "omarchy_native_setup": "passed",
     "sudo_fresh_authentication": "passed",
-    "polkit_fresh_authentication": "passed",
+    "polkit_fresh_authentication": "passed: authorization cache revoked, D-Bus VerifyStatus('verify-match', true) observed, pkexec id -u returned 0",
     "lock_screen_fingerprint_unlock": "passed, owner confirmed",
     "optional_image_metrics": "unsupported (0x0401), driver automatic fallback observed",
     "whole_system_reboot": "not tested",

@@ -151,6 +151,14 @@ On 2026-11-16, this G83/HS passed:
 8. A real Wayland session lock followed by fingerprint unlock, confirmed by the
    owner. Shell logs showed a secure lock followed by a normal unlock.
 
+A follow-up Polkit test explicitly revoked temporary authorization, started
+after the owner was ready, observed D-Bus `VerifyStatus ('verify-match', true)`
+and received UID `0` from `pkexec /usr/bin/id -u`. A root command's success
+alone does not distinguish a fingerprint match from password fallback or
+cached authorization. An earlier request fell back to a password, and a
+separate scan timed out while waiting for a sensor event; those attempts are
+not counted as successful fingerprint authentication.
+
 The pairing file was confirmed root-owned with mode 0600. No pairing material,
 template data or raw packets are included in the report.
 
