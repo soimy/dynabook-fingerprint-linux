@@ -1,0 +1,32 @@
+Subject: [PATCH] synatlsmoc: register experimental Dynabook 06cb:00d4
+
+The Dynabook G83/HS exposes the same USB endpoint layout as synatlsmoc.
+Register it for controlled hardware testing. This is not a claim of working
+TLS pairing, enrollment or verification: those operations remain untested.
+Keep the existing firmware, public-key and TLS checks intact.
+
+Base: vojtapl/libfprint 0c67248a5a4af188d6c1417fb348f655e80f6c8e
+
+diff --git a/data/autosuspend.hwdb b/data/autosuspend.hwdb
+--- a/data/autosuspend.hwdb
++++ b/data/autosuspend.hwdb
+@@ -274,6 +274,7 @@ ID_PERSIST=0
+ usb:v06CBp00BE*
+ usb:v06CBp00C9*
+ usb:v06CBp00D1*
++usb:v06CBp00D4*
+ usb:v06CBp00D6*
+ usb:v06CBp00D8*
+ usb:v06CBp00E7*
+diff --git a/libfprint/drivers/synatlsmoc/synatlsmoc.c b/libfprint/drivers/synatlsmoc/synatlsmoc.c
+--- a/libfprint/drivers/synatlsmoc/synatlsmoc.c
++++ b/libfprint/drivers/synatlsmoc/synatlsmoc.c
+@@ -131,6 +131,8 @@ static const FpIdEntry id_table[] = {
+     { .vid = SYNAPTICS_VENDOR_ID,  .pid = 0x00BE, },
+     { .vid = SYNAPTICS_VENDOR_ID,  .pid = 0x00C9, },
+     { .vid = SYNAPTICS_VENDOR_ID,  .pid = 0x00D1, },
++    /* Experimental: Dynabook G83/HS, hardware validation pending. */
++    { .vid = SYNAPTICS_VENDOR_ID,  .pid = 0x00D4, },
+     { .vid = SYNAPTICS_VENDOR_ID,  .pid = 0x00D6,
+       .driver_data = SYNATLSMOC_DRIVER_DATA_HAS_LED, },
+     { .vid = SYNAPTICS_VENDOR_ID,  .pid = 0x00D8, },

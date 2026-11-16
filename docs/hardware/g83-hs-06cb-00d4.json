@@ -1,0 +1,16 @@
+{
+  "observed_date": "2026-11-16",
+  "laptop": "Dynabook G83/HS",
+  "usb_id": "06cb:00d4",
+  "firmware": "10.1",
+  "build_number": 3238595,
+  "build_time_utc": "2020-06-15T02:40:34+00:00",
+  "product_id": 65,
+  "silicon_revision": 1,
+  "security": "0x0f",
+  "interface": "0xa1",
+  "device_type": "0x0000",
+  "provision_state": 3,
+  "known_firmware_keys": true,
+  "compatibility": "unverified: GET_VERSION does not validate TLS or fingerprint operations"
+}

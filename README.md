@@ -1,4 +1,29 @@
-# Fingerprint reader of the Dynabook Satellite Pro L50-G on Linux
+# Dynabook fingerprint readers on Linux
+
+This fork adds an **experimental Dynabook G83/HS (`06cb:00d4`) development
+path** to the original L50-G project. Registration and compilation do not prove
+hardware compatibility; TLS pairing, enrollment, verification and persistence
+on the G83 are still pending.
+
+| Device | Status | Instructions |
+|---|---|---|
+| G83/HS, `06cb:00d4` | Experimental, hardware validation pending | [G83 development guide](docs/G83-HS.md) |
+| Satellite Pro L50-G, `06cb:00eb` | Tested by the original author | Original guide below |
+
+For G83 development, start with a read-only probe, then a local build:
+
+```sh
+sudo python scripts/probe-synaptics.py --json
+bash scripts/build-g83.sh
+```
+
+The probe only sends GET_VERSION and omits serial numbers. The build uses
+pinned source revisions from [sources.env](sources.env), keeps artifacts in
+`.work/`, and does not install or start a system service. The pinned libfprint
+already includes patches `0001` and `0002`; the G83 build applies `0004`,
+the hwdb consistency fix `0005`, and the fprintd persistent-data patch `0003`.
+
+## Original L50-G guide
 
 Synaptics **06cb:00eb** ("Tudor" match-in-sensor family) working on Linux with a
 fully open-source stack, plus a security review and fixes of that stack.
@@ -48,7 +73,8 @@ sudo apt install meson ninja-build libgusb-dev libgudev-1.0-dev libnss3-dev \
   libgirepository1.0-dev libpixman-1-dev libcairo2-dev valac libssl-dev \
   libpolkit-gobject-1-dev fprintd libpam-fprintd
 mkdir -p ~/dev && cd ~/dev
-git clone https://github.com/vojtapl/libfprint && cd libfprint && git am ../dynabook-l50g-fingerprint-linux/patches/000[12]-*.patch
+git clone https://github.com/vojtapl/libfprint && cd libfprint
+git checkout 0c67248a5a4af188d6c1417fb348f655e80f6c8e # already includes 0001 and 0002
 meson setup build -Dprefix=/usr/local -Dlibdir=lib -Ddrivers=all -Ddoc=false -Dgtk-examples=false \
   -Dudev_rules=enabled -Dudev_rules_dir=/etc/udev/rules.d -Dudev_hwdb=enabled -Dudev_hwdb_dir=/etc/udev/hwdb.d && ninja -C build
 cd ~/dev && git clone https://gitlab.freedesktop.org/libfprint/fprintd && cd fprintd && git checkout v1.94.5 && patch -p1 < ../dynabook-l50g-fingerprint-linux/patches/0003-*.patch

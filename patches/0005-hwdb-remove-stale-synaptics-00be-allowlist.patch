@@ -1,0 +1,18 @@
+Subject: [PATCH] hwdb: remove supported 06cb:00be from unsupported allowlist
+
+The pinned synatlsmoc fork already registers 06cb:00be but leaves the same
+device in the unsupported-device allowlist. The hwdb generator warns about
+this duplicate and aborts under the test suite's G_DEBUG=fatal-warnings.
+The autosuspend.hwdb file already lists it only under synatlsmoc.
+
+diff --git a/libfprint/fprint-list-udev-hwdb.c b/libfprint/fprint-list-udev-hwdb.c
+--- a/libfprint/fprint-list-udev-hwdb.c
++++ b/libfprint/fprint-list-udev-hwdb.c
+@@ -67,7 +67,6 @@ static const FpIdEntry allowlist_id_table[] = {
+   { .vid = 0x06cb, .pid = 0x00a8 },
+   { .vid = 0x06cb, .pid = 0x00b7 },
+   { .vid = 0x06cb, .pid = 0x00bb },
+-  { .vid = 0x06cb, .pid = 0x00be },
+   { .vid = 0x06cb, .pid = 0x00cb },
+   { .vid = 0x06cb, .pid = 0x00da },
+   { .vid = 0x06cb, .pid = 0x00dc },
