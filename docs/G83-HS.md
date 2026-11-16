@@ -1,7 +1,11 @@
 # Dynabook G83/HS: experimental 06cb:00d4 development
 
-This is an adaptation of the original L50-G project, not verified G83 support.
-No firmware-version or certificate check is bypassed by the G83 patch.
+This adapts the original L50-G project for a G83/HS, with the observed results
+below. Support remains experimental while reboot and suspend/resume coverage
+is outstanding. No firmware-version or certificate check is bypassed.
+
+For installation and native authentication setup, see the
+[Omarchy guide](OMARCHY.md).
 
 ## Observed hardware
 
@@ -19,15 +23,19 @@ Read-only checks on 2026-11-16 found:
 | Firmware | 10.1, build 3238595, 2020-06-15 |
 | Product ID | 65 (`A`), same value as the tested L50-G |
 | Security / interface / provisioning | `0x0f` / `0xa1` / `3` |
-| TLS / enrollment / verification | Not tested |
-| Persistence after daemon restart / reboot | Not tested |
+| Optional image metrics | `0x0401`; driver's automatic fallback observed |
+| TLS / enrollment / matching / rejection | Passed |
+| Persistence after daemon restart | Passed with the existing enrollment |
+| sudo / Polkit / lock screen | Passed through Omarchy's native PAM integration |
+| Reboot / suspend-resume | Not tested |
 
 The endpoint layout matches `synatlsmoc`. This is a reason to test that driver,
 not proof that the command protocol or sensor certificate is compatible.
 The existing public keys in the pinned driver are for firmware **10.1**.
 Even a 10.1 response does not establish that the sensor uses those keys.
-The [sanitized GET_VERSION report](hardware/g83-hs-06cb-00d4.json) was collected
-through a system Polkit authorization prompt. No pairing command was sent.
+The [hardware report](hardware/g83-hs-06cb-00d4.json) includes the sanitized
+GET_VERSION fields and subsequent validation results. The initial probe sent
+no pairing command; later TLS and enrollment tests created Linux pairing data.
 
 The existing [00d4 support request in synaTudor](https://github.com/Popax21/synaTudor/issues/53)
 does not document a working configuration. `synaTudor` and `synatlsmoc` are
@@ -117,9 +125,9 @@ Use `G83_BUILD_ROOT=/absolute/path` for another dedicated workspace, or
 patches, refuse a different base revision, and preserve local source edits.
 For a clean reproduction, use a fresh build root.
 
-## 3. Hardware validation still required
+## 3. Observed hardware validation
 
-After reviewing the firmware report, the next development step is an isolated
+The firmware report was followed by an isolated
 fprintd hardware test with the patched library and persistent-data support.
 Do not use libfprint's standalone `examples/enroll`: it does not preserve the
 pairing data needed by this sensor family. Do not enable PAM while basic
@@ -130,17 +138,31 @@ existing Windows fingerprint enrollment. The original driver's protocol notes
 explain that Windows and Linux enrollment are not currently shared. Establish
 that this is acceptable before the first pairing test.
 
-The acceptance sequence is:
+On 2026-11-16, this G83/HS passed:
 
-1. GET_VERSION report and compatible firmware/key handling.
-2. Successful TLS handshake with certificate verification enabled.
-3. Enrollment and matching through patched fprintd.
-4. Nonmatching finger rejected.
-5. Daemon restart followed by a successful match using saved pairing data.
-6. Reboot, then suspend/resume, followed by successful verification.
-7. Only then consider system packaging and Omarchy's login/lock integration.
+1. GET_VERSION, firmware 10.1 and product ID 65.
+2. A successful device Claim/open with certificate and TLS checks enabled.
+3. Right-index enrollment, followed by `verify-match`.
+4. `verify-no-match` for an unenrolled finger.
+5. Installation of the isolated Arch package, a fresh systemd daemon and a
+   successful match with the earlier enrollment, before re-enrolling.
+6. `omarchy setup security fingerprint`, including a fresh enrollment and match.
+7. Fresh sudo and Polkit authentication after invalidating cached authorization.
+8. A real Wayland session lock followed by fingerprint unlock, confirmed by the
+   owner. Shell logs showed a secure lock followed by a normal unlock.
 
-Mark G83 support as working only after this sequence is observed. Keep
+The pairing file was confirmed root-owned with mode 0600. No pairing material,
+template data or raw packets are included in the report.
+
+The sensor returns `0x0401` for the optional `get_image_metrics` command. The
+existing driver handles this by disabling that query for the current device
+instance and continuing to sensor-side matching. A fresh daemon can log this
+warning once again; positive and negative matching both passed with this
+fallback. No hardcoded firmware/key bypass was added to suppress the warning.
+
+Whole-system reboot and suspend/resume verification remain to be done; a
+daemon restart is not a reboot test. Results apply to this G83/HS and firmware,
+not automatically to all Dynabook readers. Keep
 pairing files and raw debug logs out of commits; debug logs can include device
 identifiers even though the read-only probe report omits them.
 
@@ -159,5 +181,5 @@ Local validation on this G83: eight probe tests passed; libfprint's
 `fpi-assembling`, `fpi-ssm` and `fpi-device` unit-test executables passed;
 hwdb generation passed with the G83 ID present; patched fprintd compiled and
 its Polkit policy XML validation passed. `ldd` confirmed that the local daemon
-links to the local patched library. Hardware operations beyond GET_VERSION
-remain pending.
+links to the local patched library. The Arch package also passed these checks,
+and its installed daemon has no build-directory RPATH.

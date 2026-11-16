@@ -1,0 +1,95 @@
+# Experimental G83 runtime alongside the distribution libfprint/fprintd.
+pkgname=dynabook-g83-fingerprint
+pkgver=20261116
+pkgrel=1
+pkgdesc='Experimental Synaptics 06cb:00d4 stack for Dynabook G83/HS'
+arch=('x86_64')
+url='https://github.com/soimy/dynabook-fingerprint-linux'
+license=('LGPL-2.1-or-later' 'GPL-2.0-or-later')
+depends=('fprintd' 'glib2' 'glibc' 'libgusb' 'openssl' 'polkit' 'systemd')
+makedepends=('git' 'meson' 'ninja' 'pkgconf' 'cairo' 'dbus')
+options=('!debug')
+
+source "$startdir/sources.env"
+_prefix=/opt/dynabook-g83-fingerprint
+source=(
+  "libfprint::git+$LIBFPRINT_URL#commit=$LIBFPRINT_COMMIT"
+  "fprintd::git+$FPRINTD_URL#commit=$FPRINTD_COMMIT"
+  '0003-fprintd-load-store-persistent-data-0600.patch'
+  '0004-synatlsmoc-add-experimental-06cb-00d4.patch'
+  '0005-hwdb-remove-stale-synaptics-00be-allowlist.patch'
+  'sources.env'
+)
+sha256sums=(
+  'SKIP'
+  'SKIP'
+  'e96aa3962a06bd1d791873ae187aa8f15836aabc1928c3eaffdfb454500ef21c'
+  'b3a7e558d9ae019a8bef19427cad4badbe30e93084e344dd2c3bd7c25b21c381'
+  '849f97634a6a3e08be0089251c6cbad05352ae8e8035a33265290cdc0c724991'
+  'ee479b2621b89122c4bdb99a9b5b859aa1b6683175e2d071c1aa298958e9f689'
+)
+
+prepare() {
+  git -C libfprint apply "$srcdir/0004-synatlsmoc-add-experimental-06cb-00d4.patch"
+  git -C libfprint apply "$srcdir/0005-hwdb-remove-stale-synaptics-00be-allowlist.patch"
+  git -C fprintd apply "$srcdir/0003-fprintd-load-store-persistent-data-0600.patch"
+}
+
+build() {
+  meson setup libfprint-build libfprint --prefix="$_prefix" --libdir=lib \
+    --buildtype=release -Ddrivers=synatlsmoc -Dintrospection=false \
+    -Ddoc=false -Dgtk-examples=false -Dinstalled-tests=false \
+    -Dudev_rules=disabled -Dudev_hwdb=disabled
+  ninja -C libfprint-build -j "${G83_BUILD_JOBS:-2}"
+  DESTDIR="$srcdir/stage" meson install -C libfprint-build --no-rebuild
+
+  # Redirect only libfprint's generated .pc file, not every system dependency.
+  python - "$srcdir/stage$_prefix" <<'PY'
+from pathlib import Path
+import sys
+prefix = sys.argv[1]
+pc = Path(prefix) / 'lib/pkgconfig/libfprint-2.pc'
+pc.write_text(pc.read_text().replace('prefix=/opt/dynabook-g83-fingerprint', 'prefix=' + prefix, 1))
+PY
+  export PKG_CONFIG_PATH="$srcdir/stage$_prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+  export LD_LIBRARY_PATH="$srcdir/stage$_prefix/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+  meson setup fprintd-build fprintd --prefix="$_prefix" --libdir=lib \
+    --libexecdir=libexec --sysconfdir=/etc --buildtype=release \
+    -Dpam=false -Dman=false -Dgtk_doc=false -Dsystemd=false \
+    -Ddbus_service_dir="$_prefix/share/dbus-1/system-services"
+  ninja -C fprintd-build -j "${G83_BUILD_JOBS:-2}"
+}
+
+check() {
+  meson test -C libfprint-build --suite unit-tests --print-errorlogs
+  G_DEBUG=fatal-warnings libfprint-build/libfprint/fprint-list-udev-hwdb > generated.hwdb
+  grep -Fqx 'usb:v06CBp00D4*' generated.hwdb
+  if command -v xmllint >/dev/null; then
+    meson test -C fprintd-build net.reactivated.fprint.device.policy --print-errorlogs
+  fi
+}
+
+package() {
+  DESTDIR="$pkgdir" meson install -C libfprint-build --no-rebuild
+  # Install fprintd into a scratch DESTDIR so Meson removes its build RPATH,
+  # then take only the daemon. Keep distribution D-Bus and Polkit files.
+  DESTDIR="$srcdir/fprintd-install" meson install -C fprintd-build --no-rebuild
+  install -Dm755 "$srcdir/fprintd-install$_prefix/libexec/fprintd" \
+    "$pkgdir$_prefix/libexec/fprintd"
+
+  install -dm755 "$pkgdir/usr/lib/systemd/system/fprintd.service.d"
+  cat > "$pkgdir/usr/lib/systemd/system/fprintd.service.d/90-dynabook-g83.conf" <<'EOF'
+[Service]
+ExecStart=
+ExecStart=/opt/dynabook-g83-fingerprint/libexec/fprintd
+Environment=LD_LIBRARY_PATH=/opt/dynabook-g83-fingerprint/lib
+UMask=0077
+EOF
+  install -dm755 "$pkgdir/usr/lib/udev/hwdb.d"
+  cat > "$pkgdir/usr/lib/udev/hwdb.d/61-dynabook-g83-fingerprint.hwdb" <<'EOF'
+# Experimental synatlsmoc support for Dynabook G83/HS
+usb:v06CBp00D4*
+ ID_AUTOSUSPEND=1
+ ID_PERSIST=0
+EOF
+}

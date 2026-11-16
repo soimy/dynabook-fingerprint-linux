@@ -111,5 +111,5 @@ fi
 printf '\nBuilt locally:\n  libfprint: %s\n  fprintd:   %s\n' \
     "$PREFIX/lib/libfprint-2.so.2" "$WORK/fprintd-build/src/fprintd"
 printf 'Source revisions: libfprint %s, fprintd %s\n' "$LIBFPRINT_COMMIT" "$FPRINTD_COMMIT"
-echo 'Hardware pairing, enrollment and verification are still unverified.'
+echo 'This build does not perform hardware pairing, enrollment or verification.'
 echo 'fprintd integration tests require additional mocks and virtual-driver bindings and are not run by this helper.'

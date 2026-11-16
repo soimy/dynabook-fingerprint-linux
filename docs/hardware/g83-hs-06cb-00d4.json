@@ -12,5 +12,22 @@
   "device_type": "0x0000",
   "provision_state": 3,
   "known_firmware_keys": true,
-  "compatibility": "unverified: GET_VERSION does not validate TLS or fingerprint operations"
+  "compatibility": "validated on this G83/HS; see validation for scope",
+  "validation": {
+    "tls_with_certificate_verification": "passed",
+    "enrollment": "passed",
+    "matching_finger": "passed",
+    "nonmatching_finger": "rejected",
+    "existing_enrollment_after_daemon_restart": "passed",
+    "arch_package": "dynabook-g83-fingerprint 20261116-1",
+    "pairing_file_owner_uid": 0,
+    "pairing_file_mode": "0600",
+    "omarchy_native_setup": "passed",
+    "sudo_fresh_authentication": "passed",
+    "polkit_fresh_authentication": "passed",
+    "lock_screen_fingerprint_unlock": "passed, owner confirmed",
+    "optional_image_metrics": "unsupported (0x0401), driver automatic fallback observed",
+    "whole_system_reboot": "not tested",
+    "suspend_resume": "not tested"
+  }
 }

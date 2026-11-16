@@ -1,14 +1,22 @@
 # Dynabook fingerprint readers on Linux
 
-This fork adds an **experimental Dynabook G83/HS (`06cb:00d4`) development
-path** to the original L50-G project. Registration and compilation do not prove
-hardware compatibility; TLS pairing, enrollment, verification and persistence
-on the G83 are still pending.
+This fork supports **Dynabook G83/HS (`06cb:00d4`)** with an experimental
+`synatlsmoc` stack and Arch/Omarchy integration, alongside the original L50-G
+work. On the tested G83, TLS, enrollment, matching, rejection, daemon-restart
+persistence, sudo, Polkit and the Omarchy lock screen work. Reboot and
+suspend/resume tests are still outstanding.
 
 | Device | Status | Instructions |
 |---|---|---|
-| G83/HS, `06cb:00d4` | Experimental, hardware validation pending | [G83 development guide](docs/G83-HS.md) |
+| G83/HS, `06cb:00d4`, firmware 10.1 | Tested on Omarchy; reboot/suspend pending | [Install and integrate](docs/OMARCHY.md), [hardware report](docs/G83-HS.md) |
 | Satellite Pro L50-G, `06cb:00eb` | Tested by the original author | Original guide below |
+
+Clone this fork for G83 support:
+
+```sh
+git clone https://github.com/soimy/dynabook-fingerprint-linux.git
+cd dynabook-fingerprint-linux
+```
 
 For G83 development, start with a read-only probe, then a local build:
 
@@ -22,6 +30,11 @@ pinned source revisions from [sources.env](sources.env), keeps artifacts in
 `.work/`, and does not install or start a system service. The pinned libfprint
 already includes patches `0001` and `0002`; the G83 build applies `0004`,
 the hwdb consistency fix `0005`, and the fprintd persistent-data patch `0003`.
+
+For a persistent Omarchy installation, use the [Arch package and native setup
+workflow](docs/OMARCHY.md). The package installs into
+`/opt/dynabook-g83-fingerprint` and uses a systemd drop-in for fprintd. Pairing
+data stays root-only in `/var/lib/fprint`.
 
 ## Original L50-G guide
 
@@ -77,7 +90,7 @@ git clone https://github.com/vojtapl/libfprint && cd libfprint
 git checkout 0c67248a5a4af188d6c1417fb348f655e80f6c8e # already includes 0001 and 0002
 meson setup build -Dprefix=/usr/local -Dlibdir=lib -Ddrivers=all -Ddoc=false -Dgtk-examples=false \
   -Dudev_rules=enabled -Dudev_rules_dir=/etc/udev/rules.d -Dudev_hwdb=enabled -Dudev_hwdb_dir=/etc/udev/hwdb.d && ninja -C build
-cd ~/dev && git clone https://gitlab.freedesktop.org/libfprint/fprintd && cd fprintd && git checkout v1.94.5 && patch -p1 < ../dynabook-l50g-fingerprint-linux/patches/0003-*.patch
+cd ~/dev && git clone https://gitlab.freedesktop.org/libfprint/fprintd && cd fprintd && git checkout v1.94.5 && patch -p1 < ../dynabook-fingerprint-linux/patches/0003-*.patch
 meson setup build -Dprefix=/usr/local -Dpam=false -Dman=false -Dsystemd_system_unit_dir=/usr/local/lib/systemd/system \
   -Ddbus_service_dir=/usr/local/share/dbus-1/system-services && ninja -C build
 ```
